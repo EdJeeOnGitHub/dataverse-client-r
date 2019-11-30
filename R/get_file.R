@@ -71,7 +71,7 @@ function(file,
         file <- paste0(file, collapse = ",")
         u <- paste0(api_url(server), "access/datafiles/", file)
         r <- httr::GET(u, httr::add_headers("X-Dataverse-key" = key), ...)
-        httr::stop_for_status(r)
+        stop_for_file_status(r)
         tempf <- tempfile(fileext = ".zip")
         tempd <- tempfile()
         dir.create(tempd)
@@ -105,7 +105,7 @@ function(file,
                 r <- httr::GET(u, httr::add_headers("X-Dataverse-key" = key), ...)
             }
         }
-        httr::stop_for_status(r)
+        stop_for_file_status(r)
         return(httr::content(r, as = "raw"))
     }
 }
@@ -113,6 +113,24 @@ function(file,
 get_file_name_from_header <- function(x) {
     gsub("\"", "", strsplit(httr::headers(x)[["content-type"]], "name=")[[1]][2])
 }
+
+
+#' Verbose httr::stop_for_status
+#' 
+#' A more verbose message is returned if get_file fails - useful for when
+#' files aren't able to be returned in a certain format etc.
+#' 
+#' @param request httr request to check 
+stop_for_file_status <- function(request){
+    file_status_code <- httr::status_code(request)
+    if (file_status_code != 200) {
+        request_message <- httr::content(request)$message
+    } else {
+        request_message <- NULL
+    }
+    httr::stop_for_status(request, task = request_message)
+}
+
 
 #' @rdname files
 #' @import xml2
